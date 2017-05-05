@@ -41,7 +41,7 @@ clusters.tra=c("theta defensins", #1
 
 shinyServer(function(input, output) {
   
-  # Calculations when button pressed
+ # Calculations when button pressed ---------------------
   DATA <- eventReactive(input$button,{
     
     newseq.cis <- seq.MSA.add(SAPCA.cis,input$query_sequence,"cis-Defensins")
@@ -86,9 +86,9 @@ shinyServer(function(input, output) {
     DATA
   })
   
-  # Main seqspace plot
+  # Main plot seqspace -------------------------------------
   output$mainplot <- renderPlot({
-  
+
     # plot(DATA()$plotPCs)
     if(DATA()$match=="cis-Defensin"){
       colours<-palette(c("blue",            #1 Plant extreme
@@ -110,14 +110,12 @@ shinyServer(function(input, output) {
                     plotPCs = DATA()$plotPCs,
                     labels = "query",
                     radius = c(2,rep(0.3,nrow(DATA()$SAPCA.add$numerical.alignment$MSA)-1)))
+    rgl::par3d(DATA()$view)
+    rgl::par3d(DATA()$view)
  
   })
   
-  #####TEMP
-  output$temp <- renderText({print(   DATA()$temp.seq  )})
-  ####
-  
-  # Report on match
+  # Text report on match ------------------------------------
   # Superfamily type and best hit
   output$report <- renderText({
    
