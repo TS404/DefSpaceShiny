@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Manual comparison\n\nsequence\nSAPCA.match  <- SAPCA.cis\nnewseq.match <- seq.MSA.add(SAPCA.match,sequence)\n\nnewseq.r  <- seq.rotate    (SAPCA.match, newseq.match)\nnewseq.c  <- seq.clust.add (SAPCA.match, newseq.r)\nSAPCA.add <- seq.SAPCA.add (SAPCA.match, newseq.r, newseq.c)\n\n\n\n-------------\n  \nas.AAstringSet(SAPCA.cis$numerical.alignment$MSA,degap = 1)->MSA2\nout <- NULL\nfor (n in 1:nrow(SAPCA.cis$numerical.alignment$MSA)){\n\n  motif.matches <- NULL\n  for(m in 1:nrow(motifs)){\n    motif.match <- length(grep(as.character(motifs[m,2]),\n                               as.character(MSA2[n]),\n                               ignore.case = 1))==1\n    motif.matches <- append(motif.matches,motif.match)\n  }\n    out <- append(out,sum(motif.matches))\n}\nhist(out)\n\n\n\n\n---\n  \nas.AAstringSet(SAPCA.tra$numerical.alignment$MSA,degap = 1)->MSA3\noutt <- NULL\nfor (n in 1:nrow(SAPCA.tra$numerical.alignment$MSA)){\n  \n  motif.matches <- NULL\n  for(m in 1:nrow(motifs)){\n    motif.match <- length(grep(as.character(motifs[m,2]),\n                               as.character(MSA3[n]),\n                               ignore.case = 1))==1\n    motif.matches <- append(motif.matches,motif.match)\n  }\n  outt <- append(outt,sum(motif.matches))\n}\nhist(outt)\n",
+    "created" : 1498186984329.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "4002241408",
+    "id" : "3CB1996C",
+    "lastKnownWriteTime" : 0,
+    "last_content_update" : 1498717248230,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

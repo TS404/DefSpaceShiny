@@ -6,14 +6,15 @@
 #
 
 # Import necessary files ----------------------------------------------------------------------
-library(shiny)
+library("shiny")
 library("rgl")
 library("ggplot2")
 library("Biostrings")
 library("DECIPHER")
 library("mclust")
+library("tidyr")
 
-folder    <- "C:\\Users\\T\\OneDrive\\1-Scripts\\GitHub\\DefSpace"
+folder    <- "C:\\Users\\T\\OneDrive\\1-Scripts\\GitHub\\DefSpaceShiny"
 setwd(folder)
 
 SAPCA.cis <- readRDS("data\\CisDef.reference.PCA.RDS")
@@ -23,6 +24,8 @@ view.cis <- readRDS("data\\CisDef.viewangle.RDS")
 view.tra <- readRDS("data\\TransDef.viewangle.RDS")
 
 BLOSUM40 <- readRDS("data\\BLOSUM.RDS")
+
+motifs <- readRDS("data\\cysteine_motifs.RDS")
 
 clusters.cis=c("'extreme' plant antimicrobial defensins",  #1
                "mostly plant antimicrobial defensins",     #2
@@ -40,12 +43,47 @@ clusters.tra=c("theta defensins", #1
 # Outputs -------------------------------------------------------------------------
 
 shinyServer(function(input, output) {
+
+    # Calculations when 'Show' button pressed ---------------------  
+  DATA.view <- eventReactive(input$button.view,{
+    
+    if(input$view_type=="cis-Defensin"){
+      match        <- "cis-Defensin"
+      SAPCA.match  <- SAPCA.cis
+      newseq.match <- newseq.cis
+      view         <- view.cis
+      plotPCs      <- c(1,2,3)
+    }else{
+      match        <- "trans-Defensin"
+      SAPCA.match  <- SAPCA.tra
+      newseq.match <- newseq.tra
+      view         <- view.tra
+      plotPCs      <- c(2,1,4)
+    }
+    
+    # data variables list
+    list(match        = match,
+         SAPCA.match  = SAPCA.match,
+         newseq.match = newseq.match,
+         view         = view,
+         plotPCs      = plotPCs,
+         empty        = "")
+  })
   
- # Calculations when button pressed ---------------------
+ # Calculations when 'Calculate' button pressed ---------------------
   DATA <- eventReactive(input$button,{
     
-    newseq.cis <- seq.MSA.add(SAPCA.cis,input$query_sequence,"cis-Defensins")
-    newseq.tra <- seq.MSA.add(SAPCA.tra,input$query_sequence,"trans-Defensins")
+    # Remove line breaks from fasta input
+    query_seq <- gsub("(>.*?)\n","\\1<\n",input$query_sequence)
+    query_seq <- gsub("([^<])\n([^>])","\\1\\2",query_seq)
+    query_seq <- gsub("<\n","\n",query_seq)
+    # Ignore all but first input sequence and remove fasta headings
+    query_seq <- gsub("(\n){2,100}","\n",query_seq)
+    query_seq <- gsub("\n.*","",gsub(">.*?\n","",query_seq))
+    
+    # Superfamily match
+    newseq.cis <- seq.MSA.add(SAPCA.cis,query_seq,"cis-Defensins")
+    newseq.tra <- seq.MSA.add(SAPCA.tra,query_seq,"trans-Defensins")
     
     if(input$query_type=="cis-Defensin" |
        input$query_type=="unknown" & newseq.cis$aln.hit.score >= newseq.tra$aln.hit.score){
@@ -74,19 +112,100 @@ shinyServer(function(input, output) {
        clust.name   <- clusters.tra[SAPCA.add$seq.space.clusters$classification[1]]
     }
     
+    # Motif match
+    motif.matches <- NULL
+    for(m in 1:nrow(motifs)){
+      motif.match <- length(grep(as.character(motifs[m,2]),
+                            as.character(as.AAstring(query_seq,degap=1)),
+                            ignore.case = 1))==1
+      motif.matches <- append(motif.matches,motif.match)
+    }
+    
+    if(all(motif.matches==0)){
+      motif.short <- print("No strict matches")
+      motif       <- print("It does not strictly match any defensin motif")
+    }else{
+      motif.short <- paste(as.character(motifs[motif.matches,1]),collapse = " and ")
+      motif       <- paste0("It contains the ",
+                            paste(as.character(motifs[motif.matches,1]),collapse = " and "),
+                            " cysteine motif")
+    }
+    
     # data variables list
-    DATA <- list(match        = match,
-                 SAPCA.match  = SAPCA.match,
-                 newseq.match = newseq.match,
-                 view         = view,
-                 plotPCs      = plotPCs,
-                 clust.name   = clust.name,
-                 temp.seq     = temp.seq,
-                 SAPCA.add    = SAPCA.add)
-    DATA
+    list(match         = match,
+         motif         = motif,
+         motif.short   = motif.short,
+         SAPCA.match   = SAPCA.match,
+         newseq.match  = newseq.match,
+         newseq.cis    = newseq.cis,
+         newseq.tra    = newseq.tra,
+         view          = view,
+         plotPCs       = plotPCs,
+         clust.name    = clust.name,
+         temp.seq      = temp.seq,
+         SAPCA.add     = SAPCA.add,
+         empty         = "")
+    
   })
   
-  # Main plot seqspace -------------------------------------
+  
+  
+  
+  DATA2.view <- eventReactive(input$button2.view,{
+    
+    list(selected.view = plot_overlay_3Dlabel.A(SAPCA   = DATA.view()$SAPCA.match,
+                                                plotPCs = DATA.view()$plotPCs),
+         go = TRUE)
+    
+  })
+  
+  
+  DATA2 <- eventReactive(input$button2,{
+    
+    list(selected = plot_overlay_3Dlabel.A(SAPCA   = DATA()$SAPCA.add,
+                                           plotPCs = DATA()$plotPCs),
+         go = TRUE)
+    
+  })
+
+  
+  
+
+  # Plot seqspace (view) -------------------------------------
+  output$mainplot.view <- renderPlot({
+    
+    # plot(DATA.view()$plotPCs)
+    if(DATA.view()$match=="cis-Defensin"){
+      colours<-palette(c("blue",            #1 Plant extreme
+                         "darkolivegreen4", #2 Plant main
+                         "grey",            #3 Intermed
+                         "purple1",         #4 Plant sex
+                         "orange",          #5 Plant his
+                         "maroon",          #6 Invert
+                         "red"))            #7 Tox
+    }
+    if(DATA.view()$match=="trans-Defensin"){
+      colours<-palette(c("blue",     #1 Theta
+                         "red",      #2 Aalpha
+                         "orange",   #3 Beta
+                         "purple"))  #4
+    }
+    
+
+    plot_3Dclusters(DATA.view()$SAPCA.match,
+                    plotPCs = DATA.view()$plotPCs)
+    rgl::rgl.viewpoint(180,-70)
+    # rgl::par3d(DATA()$view)
+    
+    if(DATA2.view()$go){
+      plot_overlay_3Dlabel.B(selection = DATA2.view()$selected.view,
+                             SAPCA     = DATA.view()$SAPCA.match,
+                             plotPCs   = DATA.view()$plotPCs)
+    }
+    
+  })
+  
+  # Plot seqspace (query) -------------------------------------
   output$mainplot <- renderPlot({
 
     # plot(DATA()$plotPCs)
@@ -106,70 +225,182 @@ shinyServer(function(input, output) {
                          "purple"))  #4
     }
 
+    
+
     plot_3Dclusters(DATA()$SAPCA.add,
                     plotPCs = DATA()$plotPCs,
                     labels = "query",
                     radius = c(2,rep(0.3,nrow(DATA()$SAPCA.add$numerical.alignment$MSA)-1)))
-    rgl::par3d(DATA()$view)
-    rgl::par3d(DATA()$view)
- 
+    rgl::rgl.viewpoint(180,-70)
+    # rgl::par3d(DATA()$view)
+    
+    if(DATA2()$go){
+      plot_overlay_3Dlabel.B(selection = DATA2()$selected,
+                             SAPCA     = DATA()$SAPCA.add,
+                             plotPCs   = DATA()$plotPCs)
+    }
+           
   })
+  
+  # output$histplot <- renderPlot({
+  #   
+  #   aln.cis <- DATA()$newseq.cis$aln.all.score
+  #   aln.tra <- DATA()$newseq.tra$aln.all.score
+  #   
+  #   aln.cis[aln.cis<=0]<-0
+  #   aln.tra[aln.tra<=0]<-0
+  #   
+  #   aln.cistra <- c(aln.cis,
+  #                   aln.tra)
+  #   
+  #   max <- min(10,max(c(hist(aln.cis,(0:40)/40,plot = 0)$density,
+  #                       hist(aln.tra,(0:40)/40,plot = 0)$density)))
+  #   
+  #   hist(aln.cis,
+  #        xlim   = c(0,1),
+  #        ylim   = c(0,max),
+  #        breaks = (0:40)/40,
+  #        col    = rgb(0,0.5,0,0.5), # green
+  #        freq   = FALSE,
+  #        xlab   = "Similarity",
+  #        main   = "")
+  #   hist(aln.tra,
+  #        breaks = (0:40)/40,
+  #        col    = rgb(0,0,0.8,0.5), # blue
+  #        freq   = FALSE,
+  #        add    = TRUE)
+  #   box()
+  # })
   
   # Text report on match ------------------------------------
   # Superfamily type and best hit
+  
+  output$report_legend <- renderText({
+    
+    paste ("blue:","'extreme' plant antimicrobial defensins.",    #1
+           "green:","plant antimicrobial defensins.",      #2
+           "grey:","proteins with a mixture of functions from across the eukarya.", #3
+           "purple:","plant signalling proteins.",                #4
+           "orange:","plant histidine-rich defensins.",           #5
+           "maroon:","arthropod antimicrobial defensins.",        #6
+           "red:","arthropod alpha neurotoxins."                  #7
+          )
+  })
+  
+  output$title <- renderText({
+
+    paste0("Results summary",
+           DATA()$empty)
+    
+  })
+  
   output$report <- renderText({
-   
-    if(input$query_type=="unknown"){
-      if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
-        print(paste0("The submitted query sequence appears to be a ",
-                     DATA()$match,
-                     ". Its similarity to the nearest sequence is ",
-                     percent(DATA()$newseq.match$aln.hit.score),
-                     "."))
-      }else{
-        print(paste0("Sequence may not be a defensin. Its similarity to any known defensin is only ",
-                     percent(DATA()$newseq.match$aln.hit.score),
-                     "."))
-      }
-    }
-  })
-  
-  # Matching residues
-  output$report2 <- renderText({
     
+    # Report section 1
+    rep1 <- if(input$query_type=="unknown"){
+              if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
+                print(paste0("The submitted query sequence is more likely to be from the ",
+                             DATA()$match,
+                             " superfamily. ",
+                             DATA()$motif,
+                             ". Its similarity to the nearest sequence is ",
+                             percent(DATA()$newseq.match$aln.hit.score),
+                             "."))
+              }else{
+                print(paste0("The query sequence may not be a defensin. Although defensin sequences are highly variable, the query is a very poor match to any defensin in the database. Therefore, please interpret any of this data with caution. ",
+                             DATA()$motif,
+                             ". Its similarity to any known defensin is only ",
+                             percent(DATA()$newseq.match$aln.hit.score),
+                             "."))
+              }
+            }
+
+  # Report section 2
+    rep2 <- paste0("The sequence falls within cluster ",
+                   DATA()$SAPCA.add$seq.space.clusters$classification[1],
+                   ", which contains ",
+                   DATA()$clust.name,
+                   ".")
+    
+  # Report section 3
     exceptions <- if(sum(strsplit(DATA()$temp.seq,"")[[1]]=="-")!=0){
-                     paste0(", except for ",
-                            sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"),
-                            ". The residues that were taken into account in calculating its sequence space position were therefore: '",
-                            DATA()$temp.seq,
-                            "'")
-                   }
+      paste0(", except for ",
+             sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"),
+             ". The residues that were taken into account in calculating its sequence space position were therefore: '",
+             DATA()$temp.seq,
+             "'")
+    }
     
-    paste0("All residues of the query sequence were alignable to the existing ",
-           DATA()$match,
-           " MSA",
-           exceptions,
-           ".")
+    rep3 <- paste0("All residues of the query sequence were alignable to the existing ",
+                   DATA()$match,
+                   " MSA",
+                   exceptions,
+                   ".")
+
+  # join the report sentences together into paragraph
+  paste(rep1,rep2,rep3)
   })
-  
-  # Cluster
-  output$report3 <- renderText({
-    
-    paste0("The sequence falls within cluster ",
-           DATA()$SAPCA.add$seq.space.clusters$classification[1],
-           ", which contains ",
-           DATA()$clust.name)
-  })
+
   
   # Nearest neighbours fasta alignment
   output$fasta <- renderUI({
     
     HTML(
-      as.fasta(DATA()$SAPCA.add$numerical.alignment$MSA[rownames(closest(DATA()$SAPCA.add,n = input$return_nearest,"query")),],
+      as.fasta(DATA()$SAPCA.add$numerical.alignment$MSA[rownames(closest(DATA()$SAPCA.add,n = 1+input$return_nearest,"query")),],
                decolgap = TRUE,
                print    = TRUE)
     )
   })
+  
+  
+  # Selected sequences fasta alignment
+  output$fasta2 <- renderUI({
+    
+    HTML(
+      as.fasta(DATA()$SAPCA.add$numerical.alignment$MSA[DATA2()$selected$selected.set,],
+               decolgap = TRUE,
+               print    = TRUE)
+    )
+  })
+  
+  
+  # Selected sequences fasta alignment
+  output$fasta2.view <- renderUI({
+    
+    HTML(
+      as.fasta(DATA.view()$SAPCA.match$numerical.alignment$MSA[DATA2.view()$selected$selected.set,],
+               decolgap = TRUE,
+               print    = TRUE)
+    )
+  })
+  
+  DATA.table <- eventReactive(input$button,{
+    
+    #Summary table
+    summary.table <- data.frame(cbind(c("Superfamily",
+                                        "Cysteine motifs",
+                                        "Max similarity",
+                                        "SeqSpace cluster",
+                                        "Cluster functions",
+                                        "Unalignable residues"),
+                                      c(if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
+                                        DATA()$match
+                                        }else{
+                                          paste0("May not be a defensin (",
+                                                 DATA()$match,
+                                                 " is best match)")
+                                        },
+                                        DATA()$motif.short,
+                                        percent(DATA()$newseq.match$aln.hit.score),
+                                        DATA()$SAPCA.add$seq.space.clusters$classification[1],
+                                        DATA()$clust.name,
+                                        sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"))
+    ))
+    colnames(summary.table)<- c("Property","Result")
+    summary.table
+  })
+  
+  output$table <- renderTable(DATA.table())
   
 })
 
@@ -288,6 +519,23 @@ closest <- function (SAPCA,
 
 
 
+read.MSA <- function(MSA){
+  # Load sequence MSA
+  # if a matrix, can be used straight away
+  # if raw fasta file, use seqinr to convert to data frame
+  if (!is.matrix(MSA)){
+    MSA       <- data.frame(seqinr::read.fasta(MSA,set.attributes=FALSE))
+  }
+  # if a data frame, convert to matrix
+  if (is.data.frame(MSA)){
+    MSA       <- as.matrix(t(toupper(as.matrix(MSA))))
+  }
+  
+  MSA
+}
+
+
+
 as.fasta <- function(matrix,degap=FALSE,decolgap=FALSE,write=FALSE,print=FALSE,name=NULL){
   
   # Remove empty columns
@@ -356,19 +604,20 @@ as.AAstringSet<-function(MSA, degap=FALSE){
 
 
 
-seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL){
+seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL,smatrix=BLOSUM40){
+  sequence <- casefold(sequence,upper=TRUE)
   MSA   <- SAPCA$numerical.alignment$MSA
   MSA2  <- as.AAstringSet(MSA,degap = TRUE)
   seqs  <- nrow(MSA)
   seq   <- as.AAstring(sequence, degap=FALSE)
   seq.d <- as.AAstring(sequence, degap=TRUE)
-  BLOSUM40 <- blosum()
+  BLOSUM40 <- smatrix
   
   aln.all <- Biostrings::pairwiseAlignment(MSA2,
                                            seq.d,
                                            substitutionMatrix = BLOSUM40,
                                            gapOpening   = 0,
-                                           gapExtension = 8,
+                                           gapExtension = 4,
                                            scoreOnly    = TRUE)
   
   # Max possible similarity score
@@ -376,7 +625,7 @@ seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL){
                                              seq.d,
                                              substitutionMatrix = BLOSUM40,
                                              gapOpening   = 0,
-                                             gapExtension = 8,
+                                             gapExtension = 4,
                                              scoreOnly    = TRUE)
   
   # Similarity score as percentage of max
@@ -389,15 +638,20 @@ seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL){
   
   # Use "*" to indicate gaps in the best reference sequence (aln.hit)
   aln.hit <- gsub("-","*",as.AAstring(MSA[aln.hit.num,]))
-  aln.add <- Biostrings::pairwiseAlignment(aln.hit,
-                                           seq.d,
+  
+  # Use "#" to anchor ends of sequences so that they are not trimmed
+  aln.hit.anchor <- paste0("########",aln.hit,"########")
+  seq.d.anchor   <- paste0("########",seq.d,  "########")
+  
+  aln.add <- Biostrings::pairwiseAlignment(aln.hit.anchor,
+                                           seq.d.anchor,
                                            substitutionMatrix = BLOSUM40,
                                            gapOpening   = 0,
-                                           gapExtension = 8)
+                                           gapExtension = 4)
   
   # Has the new sequence introduced exrta gaps into the hit sequence alignement?
   aln.hit.orig         <- as.AAstring(MSA[aln.hit.num,])
-  aln.hit.new          <- Biostrings::pattern(aln.add)
+  aln.hit.new          <- gsub("#","",Biostrings::pattern(aln.add))
   aln.hit.seq.aln.orig <- unlist(strsplit(as.character(aln.hit.orig),""))
   aln.hit.seq.aln.new  <- unlist(strsplit(as.character(aln.hit.new),""))
   
@@ -409,46 +663,64 @@ seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL){
   }
   
   # Alignment addition as matrix
-  aln.add.mat <- rbind(unlist(strsplit(as.character(Biostrings::pattern(aln.add)),"")),
-                       unlist(strsplit(as.character(Biostrings::subject(aln.add)),"")))
+  aln.add.mat <- rbind(unlist(strsplit(as.character(gsub("#","",Biostrings::pattern(aln.add))),"")),
+                       unlist(strsplit(as.character(gsub("#","",Biostrings::subject(aln.add))),"")))
   
   # Unmathcable resiues removed from aligned sequence
   aln.add2 <- aln.add.mat[2,][aln.add.mat[1,]!="-"]
   aln.add3 <- paste(as.AAstring(aln.add2))
-  
-  # Gaps in the hit sequence (original and newly aligned)
-  gaps.orig       <- unlist(strsplit(as.character(aln.hit.orig),"[A-Z]"))
-  gaps.count.orig <- nchar(gaps.orig)
-  gaps.lead.orig  <- gaps.count.orig[1]
-  gaps.trail.orig <- gaps.count.orig[length(gaps.count.orig)]
-  
-  gaps.new        <- unlist(strsplit(as.character(gsub("-","",aln.hit.new)),"[A-Z]"))
-  gaps.count.new  <- nchar(gaps.new)
-  gaps.lead.new   <- gaps.count.new[1]
-  gaps.trail.new  <- gaps.count.new[length(gaps.count.new)]
-  
-  if(length(gaps.count.orig)>length(gaps.count.new)){
-    gaps.count.new <- append(gaps.count.new,0)
-  }
-  
-  gaps.discrep     <- suppressWarnings(rbind(gaps.count.orig,gaps.count.new))
-  gaps.discrep.num <- gaps.discrep[1,]-gaps.discrep[2,]
-  gaps.lead.add    <- gaps.discrep.num[1]
-  gaps.trail.add   <- gaps.discrep.num[length(gaps.discrep.num)]
-  
-  # New alignment
-  aln.add4  <- c(rep("-",gaps.lead.add),
-                 aln.add2,
-                 rep("-",gaps.trail.add))
+
+  # Unalignable residues ignored from the middle of the sequence
   
   seq.alignable <- Biostrings::pairwiseAlignment(seq.d,
                                                  as.AAstring(aln.add3, degap=TRUE),
                                                  substitutionMatrix = BLOSUM40,
                                                  gapOpening   = 0,
-                                                 gapExtension = 8)
-  length(aln.add4)==ncol(MSA)
+                                                 gapExtension = 4)
+  # res.mid.removed <- sum(unlist(strsplit(as.character(subject(seq.alignable)),""))=="-")
+  # 
+  # # Reidues removed from the start or finish template (aln.hit) during alignment
+  # res.terminal.discrep <- nchar(gsub("[*]","",aln.hit)) - nchar(gsub("[*]","",aln.hit.new)) + res.mid.removed
+  # 
+  # aln.hit.d <- unlist(strsplit(as.character(gsub("[*]","",aln.hit)),""))
+  # aln.hit.new.d <- unlist(strsplit(as.character(gsub("[*]","",aln.hit.new)),""))
+  # 
+  # aln.hit.d[x + 1:length(aln.hit.new.d)]
+  # 
+  # displacement <- NULL
+  # for(x in 0:(res.terminal.discrep)){
+  #   displacement <- append(displacement,mean(aln.hit.d[x + 1:length(aln.hit.new.d)]==aln.hit.new.d))
+  # }
+  # res.lead.missing <- which.max(displacement)-1
+  # res.tail.missing <- res.terminal.discrep-which.max(displacement)+1
+  # 
+  # # Gaps in the hit sequence (original and newly aligned)
+  # gaps.orig       <- unlist(strsplit(as.character(aln.hit.orig),"[A-Z]"))
+  # gaps.count.orig <- nchar(gaps.orig)
+  # gaps.lead.orig  <- gaps.count.orig[1]
+  # gaps.tail.orig  <- gaps.count.orig[length(gaps.count.orig)]
+  # 
+  # gaps.new        <- unlist(strsplit(as.character(gsub("-","",aln.hit.new)),"[A-Z]"))
+  # gaps.count.new  <- nchar(gaps.new)
+  # gaps.lead.new   <- gaps.count.new[1]
+  # gaps.tail.new   <- gaps.count.new[length(gaps.count.new)]
+  # 
+  # if(length(gaps.count.orig)>length(gaps.count.new)){
+  #   gaps.count.new <- append(gaps.count.new,0)
+  # }
+  # 
+  # gaps.discrep     <- rbind(gaps.count.orig,
+  #                            c(rep(0,res.lead.missing),gaps.count.new))
+  # gaps.discrep.num <- gaps.discrep[1,]-gaps.discrep[2,]
+  # gaps.lead.add    <- gaps.discrep.num[1] + res.lead.missing
+  # gaps.tail.add    <- gaps.discrep.num[length(gaps.discrep.num)] + res.tail.missing
+
+  # # Final aligned sequence to add (with gps at beginning and end to fit)
+  # query <- c(rep("-",gaps.lead.add),
+  #            aln.add2,
+  #            rep("-",gaps.tail.add))
   
-  query     <- aln.add4
+  query <- aln.add2
   
   aln.final <- rbind(query,MSA)
   output    <- list(MSA             = aln.final,
@@ -576,19 +848,6 @@ seq.add.full <- function (SAPCA,sequence,SAPCAname=NULL){
 
 
 
-#BLOSUM40
-blosum <- function(file="C:\\Users\\T\\OneDrive\\0-Sequences\\2-PCA\\0-Raw data and scalers\\0 - BLOSUM40.csv"){
-  BLOSUM40 <- read.csv(file)
-  BLOSUM40.names <- BLOSUM40[,1]
-  BLOSUM40 <- BLOSUM40[,-1]
-  BLOSUM40 <- as.matrix(BLOSUM40)
-  rownames(BLOSUM40)<-BLOSUM40.names
-  colnames(BLOSUM40)<-BLOSUM40.names
-  BLOSUM40
-}
-
-
-
 percent <- function(x, digits = 1, format = "f", ...) {
   paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
 }
@@ -659,3 +918,44 @@ plot_3Dclusters <- function(SAPCA,
   }
 }
 
+
+
+plot_overlay_3Dlabel.A <- function(SAPCA,
+                                   plotPCs = 1:3){
+  selected     <- rgl::select3d()
+  selected.set <- selected(SAPCA$seq.space.PCA$coordinates[,plotPCs])
+ 
+  list(selected     = selected,
+       selected.set = selected.set)
+}
+
+
+plot_overlay_3Dlabel.B <- function(selection,
+                                   SAPCA,
+                                   plotPCs = 1:3){
+  selected     <- selection$selected
+  selected.set <- selection$selected.set
+  
+  if(sum(selected.set)!=0){
+    as.fasta(SAPCA$numerical.alignment$MSA[selected.set,],
+             decolgap=TRUE)
+    
+    
+    for (NAME in SAPCA$numerical.alignment$seq.names[selected.set]){
+      # Which point will be labelled
+      SUB <- NAME   
+      # What is the label text
+      TEXT <- NAME
+      
+      rad <- (range(SAPCA$seq.space.PCA$coordinates[,plotPCs])[2] -
+                range(SAPCA$seq.space.PCA$coordinates[,plotPCs])[1]) /
+        100
+      
+      rgl::text3d(SAPCA$seq.space.PCA$coordinates[SUB,plotPCs], 
+                  text      = paste('---',TEXT),   # data label text
+                  font      = 2,                   # bold
+                  color     = "black",             # colour
+                  adj       = -rad/2)              # offset
+    }
+  }
+}
