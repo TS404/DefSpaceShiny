@@ -13,6 +13,7 @@ library("Biostrings")
 library("DECIPHER")
 library("mclust")
 library("tidyr")
+library("rJava")
 
 folder    <- "C:\\Users\\T\\OneDrive\\1-Scripts\\GitHub\\DefSpaceShiny"
 setwd(folder)
