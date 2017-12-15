@@ -21,5 +21,5 @@ shinyUI(fluidPage(
           It can predict whether a given query sequence is a cis-defensin or trans-defensin, map
           its sequence space location, and determine which cluster it falls into.")
         )
-    ),
+    )
 ))
