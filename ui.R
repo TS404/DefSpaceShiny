@@ -22,7 +22,7 @@ shinyUI(fluidPage(
           It can predict whether a given query sequence is a cis-defensin or trans-defensin, map
           its sequence space location, and determine which cluster it falls into.")
         )
-        ),
+    ),
   
   
   tabsetPanel(
@@ -35,11 +35,11 @@ shinyUI(fluidPage(
                     label   = "Defensin superfamily",
                     choices  = c("cis-Defensin","trans-Defensin")),
         p("Clicking \"show\" will open the interactive diagram"),
-        actionButton("button.view", "Show"),
-        tags$hr(style="border-color: grey;"),
+        actionButton("button.view", "Show")       #,
+        # tags$hr(style="border-color: grey;"),
         # h4("Identify sequences"),
         # p("To identify points in the sequence space, use the button below,
-        #   then drag a box around the sequences you are interested in.")     #,
+        #   then drag a box around the sequences you are interested in."),
         # actionButton("button2.view", "Activate selection mode")           ########### selection mode cannot work online yet (RGLwidget)
         ),
       
@@ -49,9 +49,9 @@ shinyUI(fluidPage(
       # ),
       # Display selected points alignment
       mainPanel(
-        rglwidgetOutput("mainplot.view", width="100%"),
-        h4("Selected sequences"),
-        htmlOutput("fasta2.view",style = "font-family:Courier New ; min-width:500px")
+        rglwidgetOutput("mainplot.view", width="100%")#,
+        # h4("Selected sequences"),
+        #htmlOutput("fasta2.view",style = "font-family:Courier New ; min-width:500px")
       )
       
     )),
@@ -78,11 +78,11 @@ shinyUI(fluidPage(
                       choices  = c("unknown","cis-Defensin","trans-Defensin"),
                       selected = "unknown"),
           p("Clicking \"calculate\" will open the interactive diagram"),
-          actionButton("button", "Calculate"),
+          actionButton("button", "Calculate")       #,
           # tags$hr(style="border-color: grey;"),
           # h4("Identify sequences"),
           # p("To identify points in the sequence space, use the button below,
-          #   then drag a box around the sequences you are interested in.")      
+          #   then drag a box around the sequences you are interested in."),
           # actionButton("button2", "Activate selection mode")                 ########### selection mode cannot work online yet (RGLwidget)
           ),
         
@@ -105,9 +105,9 @@ shinyUI(fluidPage(
           htmlOutput("fasta",style = "font-family:Courier New ; min-width:500px"),
           
           # Display selected points alignment
-          tags$hr(style="border-color: grey;"),
-          h4("Selected sequences"),
-          htmlOutput("fasta2",style = "font-family:Courier New ; min-width:500px")
+          tags$hr(style="border-color: grey;") #,
+          #h4("Selected sequences"),
+          #htmlOutput("fasta2",style = "font-family:Courier New ; min-width:500px")
         )
         )
       ))),
