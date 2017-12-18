@@ -122,7 +122,7 @@ shinyUI(fluidPage(
           a(href="https://doi.org/10.1007/s00018-016-2344-5","DOI:10.1007/s00018-016-2344-5"))
     )
   ),
-  p("AlignStat was developed by Thomas Shafee at the ",
+  p("DefSpace was developed by Thomas Shafee at the ",
     a(href="http://www.latrobe.edu.au/lims","La Trobe Institute of Molecular Science (LIMS)")," and ",
     a(href="http://hexima.com.au/","Hexima")),
   img(src="http://cysbar.science.latrobe.edu.au/img/lims.png",width="200px"),
