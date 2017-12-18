@@ -15,18 +15,18 @@ library("mclust")
 library("tidyr")
 library("rJava")
 
-folder    <- "C:\\Users\\T\\OneDrive\\1-Scripts\\GitHub\\DefSpaceShiny"
-setwd(folder)
+SAPCA.cis <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/CisDef.reference.PCA.RDS")))
+SAPCA.tra <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/TransDef.reference.PCA.RDS")))
 
-SAPCA.cis <- readRDS("data\\CisDef.reference.PCA.RDS")
-SAPCA.tra <- readRDS("data\\TransDef.reference.PCA.RDS")
+view.cis  <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/CisDef.viewangle.RDS")))
+view.tra  <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/TransDef.viewangle.RDS")))
 
-view.cis <- readRDS("data\\CisDef.viewangle.RDS")
-view.tra <- readRDS("data\\TransDef.viewangle.RDS")
+BLOSUM40  <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/BLOSUM.RDS")))
 
-BLOSUM40 <- readRDS("data\\BLOSUM.RDS")
+motifs    <- readRDS(gzcon(url("https://github.com/TS404/DefSpaceShiny/raw/master/data/cysteine_motifs.RDS")))
 
-motifs <- readRDS("data\\cysteine_motifs.RDS")
+newseq.cis <- NULL # make empty objects for when show button is pressed in the 'View' tab
+newseq.tra <- NULL
 
 clusters.cis=c("'extreme' plant antimicrobial defensins",  #1
                "mostly plant antimicrobial defensins",     #2
