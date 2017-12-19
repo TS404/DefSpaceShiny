@@ -7,6 +7,7 @@
 
 # Import necessary files ----------------------------------------------------------------------
 library("shiny")
+library("rglwidget")
 library("rgl")
 library("ggplot2")
 library("Biostrings")
@@ -45,7 +46,7 @@ clusters.tra=c("theta defensins", #1
 
 shinyServer(function(input, output) {
 
-    # Calculations when 'Show' button pressed ---------------------  
+  # Calculations when 'Show' button pressed ---------------------  
   DATA.view <- eventReactive(input$button.view,{
     
     if(input$view_type=="cis-Defensin"){
@@ -71,7 +72,7 @@ shinyServer(function(input, output) {
          empty        = "")
   })
   
- # Calculations when 'Calculate' button pressed ---------------------
+  # Calculations when 'Calculate' button pressed ---------------------
   DATA <- eventReactive(input$button,{
     
     # Remove line breaks from fasta input
@@ -88,37 +89,37 @@ shinyServer(function(input, output) {
     
     if(input$query_type=="cis-Defensin" |
        input$query_type=="unknown" & newseq.cis$aln.hit.score >= newseq.tra$aln.hit.score){
-        match        <- "cis-Defensin"
-        SAPCA.match  <- SAPCA.cis
-        newseq.match <- newseq.cis
-        view         <- view.cis
-        plotPCs      <- c(1,2,3)
+      match        <- "cis-Defensin"
+      SAPCA.match  <- SAPCA.cis
+      newseq.match <- newseq.cis
+      view         <- view.cis
+      plotPCs      <- c(1,2,3)
     }else if(input$query_type=="trans-Defensin" |
              input$query_type=="unknown" & newseq.cis$aln.hit.score <= newseq.tra$aln.hit.score){
-        match        <- "trans-Defensin"
-        SAPCA.match  <- SAPCA.tra
-        newseq.match <- newseq.tra
-        view         <- view.tra
-        plotPCs      <- c(1,2,4)
+      match        <- "trans-Defensin"
+      SAPCA.match  <- SAPCA.tra
+      newseq.match <- newseq.tra
+      view         <- view.tra
+      plotPCs      <- c(1,2,4)
     }
-
+    
     temp.seq  <- gsub("subject: |[[]1]| ","",capture.output(newseq.match$seq.unalignable)[3])
     newseq.r  <- seq.rotate    (SAPCA.match, newseq.match)
     newseq.c  <- seq.clust.add (SAPCA.match, newseq.r)
     SAPCA.add <- seq.SAPCA.add (SAPCA.match, newseq.r, newseq.c)
     
     if(match=="cis-Defensin"){
-       clust.name   <- clusters.cis[SAPCA.add$seq.space.clusters$classification[1]]
+      clust.name   <- clusters.cis[SAPCA.add$seq.space.clusters$classification[1]]
     }else if(match=="trans-Defensin"){
-       clust.name   <- clusters.tra[SAPCA.add$seq.space.clusters$classification[1]]
+      clust.name   <- clusters.tra[SAPCA.add$seq.space.clusters$classification[1]]
     }
     
     # Motif match
     motif.matches <- NULL
     for(m in 1:nrow(motifs)){
       motif.match <- length(grep(as.character(motifs[m,2]),
-                            as.character(as.AAstring(query_seq,degap=1)),
-                            ignore.case = 1))==1
+                                 as.character(as.AAstring(query_seq,degap=1)),
+                                 ignore.case = 1))==1
       motif.matches <- append(motif.matches,motif.match)
     }
     
@@ -168,80 +169,77 @@ shinyServer(function(input, output) {
          go = TRUE)
     
   })
-
   
   
-
-  # Plot seqspace (view) -------------------------------------
-  output$mainplot.view <- renderPlot({
+  
+  
+  # Plot 3d (view) -------------------------------------
+  output$mainplot.view <- renderRglwidget({
+    save <- getOption("rgl.useNULL")
+    options(rgl.useNULL=TRUE)
+    open3d()
     
-    # plot(DATA.view()$plotPCs)
-    if(DATA.view()$match=="cis-Defensin"){
-      colours<-palette(c("blue",            #1 Plant extreme
-                         "darkolivegreen4", #2 Plant main
-                         "grey",            #3 Intermed
-                         "purple1",         #4 Plant sex
-                         "orange",          #5 Plant his
-                         "maroon",          #6 Invert
-                         "red"))            #7 Tox
-    }
-    if(DATA.view()$match=="trans-Defensin"){
-      colours<-palette(c("blue",     #1 Theta
-                         "red",      #2 Aalpha
-                         "orange",   #3 Beta
-                         "purple"))  #4
-    }
-    
-
-    plot_3Dclusters(DATA.view()$SAPCA.match,
-                    plotPCs = DATA.view()$plotPCs)
-    rgl::rgl.viewpoint(180,-70)
-    # rgl::par3d(DATA()$view)
-    
-    if(DATA2.view()$go){
-      plot_overlay_3Dlabel.B(selection = DATA2.view()$selected.view,
-                             SAPCA     = DATA.view()$SAPCA.match,
-                             plotPCs   = DATA.view()$plotPCs)
-    }
-    
+        # plot(DATA.view()$plotPCs)
+        if(DATA.view()$match=="cis-Defensin"){
+          colours<-palette(c("blue",            #1 Plant extreme
+                             "darkolivegreen4", #2 Plant main
+                             "grey",            #3 Intermed
+                             "purple1",         #4 Plant sex
+                             "orange",          #5 Plant his
+                             "maroon",          #6 Invert
+                             "red"))            #7 Tox
+        }
+        if(DATA.view()$match=="trans-Defensin"){
+          colours<-palette(c("blue",     #1 Theta
+                             "red",      #2 Aalpha
+                             "orange",   #3 Beta
+                             "purple"))  #4
+        }
+        
+        plot_3Dclusters(DATA.view()$SAPCA.match,
+                        plotPCs = DATA.view()$plotPCs)
+        rgl::rgl.viewpoint(180,-70)
+        # rgl::par3d(DATA()$view)
+        
+    rglwidget()
   })
   
-  # Plot seqspace (query) -------------------------------------
-  output$mainplot <- renderPlot({
+  
+  # Plot 3d (query) -------------------------------------
+  output$mainplot.query <- renderRglwidget({
+    save <- getOption("rgl.useNULL")
+    options(rgl.useNULL=TRUE)
+    open3d()
 
-    # plot(DATA()$plotPCs)
-    if(DATA()$match=="cis-Defensin"){
-      colours<-palette(c("blue",            #1 Plant extreme
-                         "darkolivegreen4", #2 Plant main
-                         "grey",            #3 Intermed
-                         "purple1",         #4 Plant sex
-                         "orange",          #5 Plant his
-                         "maroon",          #6 Invert
-                         "red"))            #7 Tox
-    }
-    if(DATA()$match=="trans-Defensin"){
-      colours<-palette(c("blue",     #1 Theta
-                         "red",      #2 Aalpha
-                         "orange",   #3 Beta
-                         "purple"))  #4
-    }
+      if(DATA()$match=="cis-Defensin"){
+        colours<-palette(c("blue",            #1 Plant extreme
+                           "darkolivegreen4", #2 Plant main
+                           "grey",            #3 Intermed
+                           "purple1",         #4 Plant sex
+                           "orange",          #5 Plant his
+                           "maroon",          #6 Invert
+                           "red"))            #7 Tox
+      }
+      if(DATA()$match=="trans-Defensin"){
+        colours<-palette(c("blue",     #1 Theta
+                           "red",      #2 Aalpha
+                           "orange",   #3 Beta
+                           "purple"))  #4
+      }
 
-    
 
-    plot_3Dclusters(DATA()$SAPCA.add,
-                    plotPCs = DATA()$plotPCs,
-                    labels = "query",
-                    radius = c(2,rep(0.3,nrow(DATA()$SAPCA.add$numerical.alignment$MSA)-1)))
-    rgl::rgl.viewpoint(180,-70)
-    # rgl::par3d(DATA()$view)
-    
-    if(DATA2()$go){
-      plot_overlay_3Dlabel.B(selection = DATA2()$selected,
-                             SAPCA     = DATA()$SAPCA.add,
-                             plotPCs   = DATA()$plotPCs)
-    }
-           
+
+      plot_3Dclusters(DATA()$SAPCA.add,
+                      plotPCs = DATA()$plotPCs,
+                      labels = "query",
+                      radius = c(2,rep(0.3,nrow(DATA()$SAPCA.add$numerical.alignment$MSA)-1)))
+      rgl::rgl.viewpoint(180,-70)
+      # rgl::par3d(DATA()$view)
+
+    rglwidget()
   })
+
+
   
   # output$histplot <- renderPlot({
   #   
@@ -285,11 +283,11 @@ shinyServer(function(input, output) {
            "orange:","plant histidine-rich defensins.",           #5
            "maroon:","arthropod antimicrobial defensins.",        #6
            "red:","arthropod alpha neurotoxins."                  #7
-          )
+    )
   })
   
   output$title <- renderText({
-
+    
     paste0("Results summary",
            DATA()$empty)
     
@@ -299,31 +297,31 @@ shinyServer(function(input, output) {
     
     # Report section 1
     rep1 <- if(input$query_type=="unknown"){
-              if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
-                print(paste0("The submitted query sequence is more likely to be from the ",
-                             DATA()$match,
-                             " superfamily. ",
-                             DATA()$motif,
-                             ". Its similarity to the nearest sequence is ",
-                             percent(DATA()$newseq.match$aln.hit.score),
-                             "."))
-              }else{
-                print(paste0("The query sequence may not be a defensin. Although defensin sequences are highly variable, the query is a very poor match to any defensin in the database. Therefore, please interpret any of this data with caution. ",
-                             DATA()$motif,
-                             ". Its similarity to any known defensin is only ",
-                             percent(DATA()$newseq.match$aln.hit.score),
-                             "."))
-              }
-            }
-
-  # Report section 2
+      if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
+        print(paste0("The submitted query sequence is more likely to be from the ",
+                     DATA()$match,
+                     " superfamily. ",
+                     DATA()$motif,
+                     ". Its similarity to the nearest sequence is ",
+                     percent(DATA()$newseq.match$aln.hit.score),
+                     "."))
+      }else{
+        print(paste0("The query sequence may not be a defensin. Although defensin sequences are highly variable, the query is a very poor match to any defensin in the database. Therefore, please interpret any of this data with caution. ",
+                     DATA()$motif,
+                     ". Its similarity to any known defensin is only ",
+                     percent(DATA()$newseq.match$aln.hit.score),
+                     "."))
+      }
+    }
+    
+    # Report section 2
     rep2 <- paste0("The sequence falls within cluster ",
                    DATA()$SAPCA.add$seq.space.clusters$classification[1],
                    ", which contains ",
                    DATA()$clust.name,
                    ".")
     
-  # Report section 3
+    # Report section 3
     exceptions <- if(sum(strsplit(DATA()$temp.seq,"")[[1]]=="-")!=0){
       paste0(", except for ",
              sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"),
@@ -337,11 +335,11 @@ shinyServer(function(input, output) {
                    " MSA",
                    exceptions,
                    ".")
-
-  # join the report sentences together into paragraph
-  paste(rep1,rep2,rep3)
+    
+    # join the report sentences together into paragraph
+    paste(rep1,rep2,rep3)
   })
-
+  
   
   # Nearest neighbours fasta alignment
   output$fasta <- renderUI({
@@ -386,16 +384,16 @@ shinyServer(function(input, output) {
                                         "Unalignable residues"),
                                       c(if(quantile(DATA()$newseq.match$aln.all.score, 0.95)>=0.15){
                                         DATA()$match
-                                        }else{
-                                          paste0("May not be a defensin (",
-                                                 DATA()$match,
-                                                 " is best match)")
-                                        },
-                                        DATA()$motif.short,
-                                        percent(DATA()$newseq.match$aln.hit.score),
-                                        DATA()$SAPCA.add$seq.space.clusters$classification[1],
-                                        DATA()$clust.name,
-                                        sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"))
+                                      }else{
+                                        paste0("May not be a defensin (",
+                                               DATA()$match,
+                                               " is best match)")
+                                      },
+                                      DATA()$motif.short,
+                                      percent(DATA()$newseq.match$aln.hit.score),
+                                      DATA()$SAPCA.add$seq.space.clusters$classification[1],
+                                      DATA()$clust.name,
+                                      sum(strsplit(DATA()$temp.seq,"")[[1]]=="-"))
     ))
     colnames(summary.table)<- c("Property","Result")
     summary.table
@@ -670,7 +668,7 @@ seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL,smatrix=BLOSUM40){
   # Unmathcable resiues removed from aligned sequence
   aln.add2 <- aln.add.mat[2,][aln.add.mat[1,]!="-"]
   aln.add3 <- paste(as.AAstring(aln.add2))
-
+  
   # Unalignable residues ignored from the middle of the sequence
   
   seq.alignable <- Biostrings::pairwiseAlignment(seq.d,
@@ -715,7 +713,7 @@ seq.MSA.add <- function(SAPCA,sequence,SAPCAname=NULL,smatrix=BLOSUM40){
   # gaps.discrep.num <- gaps.discrep[1,]-gaps.discrep[2,]
   # gaps.lead.add    <- gaps.discrep.num[1] + res.lead.missing
   # gaps.tail.add    <- gaps.discrep.num[length(gaps.discrep.num)] + res.tail.missing
-
+  
   # # Final aligned sequence to add (with gps at beginning and end to fit)
   # query <- c(rep("-",gaps.lead.add),
   #            aln.add2,
@@ -925,7 +923,7 @@ plot_overlay_3Dlabel.A <- function(SAPCA,
                                    plotPCs = 1:3){
   selected     <- rgl::select3d()
   selected.set <- selected(SAPCA$seq.space.PCA$coordinates[,plotPCs])
- 
+  
   list(selected     = selected,
        selected.set = selected.set)
 }
