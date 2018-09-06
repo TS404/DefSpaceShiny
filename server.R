@@ -37,10 +37,13 @@ clusters.cis=c("'extreme' plant antimicrobial defensins",  #1
                "arthropod antimicrobial defensins",        #6
                "arthropod alpha neurotoxins")              #7
 
-clusters.tra=c("theta defensins", #1
-               "alpha defensins", #2
-               "beta defensins",  #3
-               "big defensins")   #4
+clusters.tra=c("cnidarian toxins",            #1
+               "beta defensins",              #2
+               "theta defensins",             #3
+               "alpha defensins",             #4
+               "beta defensins (HBD1-like)",  #5
+               "beta defensins (HBD3-like)",  #6
+               "big defensins")               #7
 
 # Outputs -------------------------------------------------------------------------
 
@@ -60,7 +63,7 @@ shinyServer(function(input, output) {
       SAPCA.match  <- SAPCA.tra
       newseq.match <- newseq.tra
       view         <- view.tra
-      plotPCs      <- c(2,1,4)
+      plotPCs      <- c(1,2,3)
     }
     
     # data variables list
@@ -100,7 +103,7 @@ shinyServer(function(input, output) {
       SAPCA.match  <- SAPCA.tra
       newseq.match <- newseq.tra
       view         <- view.tra
-      plotPCs      <- c(1,2,4)
+      plotPCs      <- c(1,2,3)
     }
     
     temp.seq  <- gsub("subject: |[[]1]| ","",capture.output(newseq.match$seq.unalignable)[3])
@@ -190,10 +193,13 @@ shinyServer(function(input, output) {
                              "red"))            #7 Tox
         }
         if(DATA.view()$match=="trans-Defensin"){
-          colours<-palette(c("blue",     #1 Theta
-                             "red",      #2 Aalpha
-                             "orange",   #3 Beta
-                             "purple"))  #4
+        colours<-palette(c("blue",       #1 Cnid
+                           "yellow",     #2 B
+                           "red",        #3 Theta
+                           "white",      #4 Alpha
+                           "darkgrey",   #5 B2
+                           "maroon",     #6 B3
+                           "black"))     #7 Big
         }
         
         plot_3Dclusters(DATA.view()$SAPCA.match,
@@ -221,10 +227,13 @@ shinyServer(function(input, output) {
                            "red"))            #7 Tox
       }
       if(DATA()$match=="trans-Defensin"){
-        colours<-palette(c("blue",     #1 Theta
-                           "red",      #2 Aalpha
-                           "orange",   #3 Beta
-                           "purple"))  #4
+        colours<-palette(c("blue",       #1 Cnid
+                           "yellow",     #2 B
+                           "red",        #3 Theta
+                           "white",      #4 Alpha
+                           "darkgrey",   #5 B2
+                           "maroon",     #6 B3
+                           "black"))     #7 Big
       }
 
 
@@ -277,7 +286,7 @@ shinyServer(function(input, output) {
   output$report_legend <- renderText({
     
     paste ("blue:","'extreme' plant antimicrobial defensins.",    #1
-           "green:","plant antimicrobial defensins.",      #2
+           "green:","plant antimicrobial defensins.",             #2
            "grey:","proteins with a mixture of functions from across the eukarya.", #3
            "purple:","plant signalling proteins.",                #4
            "orange:","plant histidine-rich defensins.",           #5
