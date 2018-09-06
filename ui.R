@@ -119,17 +119,17 @@ shinyUI(fluidPage(
   wellPanel(
     div(class="footer",
         h3("References"),
-        p("1) Shafee T, et al. \"The defensins consist of two independent, convergent protein superfamilies.\" ",
+        p("1) Shafee T, et al. 2016 \"The defensins consist of two independent, convergent protein superfamilies.\" ",
           tags$i("Molecular Biology and Evolution"),
-          "(2016): msw106.",
+          "33(9):2345-2356.",
           a(href="https://doi.org/10.1093/molbev/msw106","DOI:10.1093/molbev/msw106")),
-        p("2) Shafee T, et al. \"Convergent evolution of defensin sequence, structure and function.\"",
+        p("2) Shafee T, et al. 2017 \"Convergent evolution of defensin sequence, structure and function.\"",
           tags$i("Cellular and Molecular Life Sciences"),
-          " (2017): 1-20.",
+          "74(4):663-682.",
           a(href="https://doi.org/10.1007/s00018-016-2344-5","DOI:10.1007/s00018-016-2344-5")),
-        p("3) Shafee T, et al. \"A quantitative map of protein sequence space for the cis-defensin superfamily\"",
+        p("3) Shafee T, et al. 2018 \"A quantitative map of protein sequence space for the cis-defensin superfamily\"",
           tags$i("Bioinformatics"),
-          " (2018): 1-20.",
+          " bty697.",
           a(href="https://doi.org/10.1093/bioinformatics/bty697","DOI:10.1093/bioinformatics/bty697"))
     )
   ),
