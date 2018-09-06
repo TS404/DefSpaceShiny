@@ -127,7 +127,7 @@ shinyUI(fluidPage(
           tags$i("Cellular and Molecular Life Sciences"),
           " (2017): 1-20.",
           a(href="https://doi.org/10.1007/s00018-016-2344-5","DOI:10.1007/s00018-016-2344-5")),
-        p("2) Shafee T, et al. \"A quantitative map of protein sequence space for the cis-defensin superfamily\"",
+        p("3) Shafee T, et al. \"A quantitative map of protein sequence space for the cis-defensin superfamily\"",
           tags$i("Bioinformatics"),
           " (2018): 1-20.",
           a(href="https://doi.org/10.1093/bioinformatics/bty697","DOI:10.1093/bioinformatics/bty697"))
