@@ -133,8 +133,11 @@ shinyUI(fluidPage(
           a(href="https://doi.org/10.1093/bioinformatics/bty697","DOI:10.1093/bioinformatics/bty697"))
     )
   ),
-  p("DefSpace was developed by Thomas Shafee at the ",
-    a(href="http://www.latrobe.edu.au/lims","La Trobe Institute of Molecular Science (LIMS)")," and ",
+  p("DefSpace was developed by",
+    a(href="https://orcid.org/0000-0002-2298-7593","Thomas Shafee"),
+    " at the ",
+    a(href="http://www.latrobe.edu.au/lims","La Trobe Institute of Molecular Science (LIMS)"),
+    " and ",
     a(href="http://hexima.com.au/","Hexima")),
   img(src="http://cysbar.science.latrobe.edu.au/img/lims.png",width="200px"),
   img(src="http://cysbar.science.latrobe.edu.au/img/hexima.png",width="200px")
