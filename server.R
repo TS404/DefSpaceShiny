@@ -37,13 +37,13 @@ clusters.cis=c("'extreme' plant antimicrobial defensins",  #1
                "arthropod antimicrobial defensins",        #6
                "arthropod alpha neurotoxins")              #7
 
-clusters.tra=c("cnidarian toxins",            #1
-               "beta defensins",              #2
-               "theta defensins",             #3
-               "alpha defensins",             #4
-               "beta defensins (HBD1-like)",  #5
-               "beta defensins (HBD3-like)",  #6
-               "big defensins")               #7
+clusters.tra=c("cnidarian neurotoxins",                     #1
+               "beta defensins (moslty antimicrobial, with some neurotoxin members)", #2
+               "antimicrobial theta defensins",             #3
+               "antimicrobial alpha defensins",             #4
+               "antimicrobial beta defensins (HBD1-like)",  #5
+               "antimicrobial beta defensins (HBD3-like)",  #6
+               "antimicrobial big defensins")               #7
 
 # Outputs -------------------------------------------------------------------------
 
