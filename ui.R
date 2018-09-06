@@ -20,7 +20,10 @@ shinyUI(fluidPage(
           the mammalian defensins and invertebrate big defensins."),
         p("This webtool allows you to interactively view the sequence space maps for these defensin superfamilies.
           It can predict whether a given query sequence is a cis-defensin or trans-defensin, map
-          its sequence space location, and determine which cluster it falls into.")
+          its sequence space location, and determine which cluster it falls into. For more details, please",
+          a(href="https://doi.org/10.1093/bioinformatics/bty697","see the accompanying publication"),
+          "(3)."
+         )
         )
     ),
   
@@ -123,7 +126,11 @@ shinyUI(fluidPage(
         p("2) Shafee T, et al. \"Convergent evolution of defensin sequence, structure and function.\"",
           tags$i("Cellular and Molecular Life Sciences"),
           " (2017): 1-20.",
-          a(href="https://doi.org/10.1007/s00018-016-2344-5","DOI:10.1007/s00018-016-2344-5"))
+          a(href="https://doi.org/10.1007/s00018-016-2344-5","DOI:10.1007/s00018-016-2344-5")),
+        p("2) Shafee T, et al. \"A quantitative map of protein sequence space for the cis-defensin superfamily\"",
+          tags$i("Bioinformatics"),
+          " (2018): 1-20.",
+          a(href="https://doi.org/10.1093/bioinformatics/bty697","DOI:10.1093/bioinformatics/bty697"))
     )
   ),
   p("DefSpace was developed by Thomas Shafee at the ",
